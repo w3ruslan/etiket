@@ -23,7 +23,9 @@
   .stat{font-weight:700;color:var(--blue)}
   .stat small{color:var(--orange)}
   .search{flex:1;min-width:160px;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px}
-  .chk{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .toggle{display:flex;background:#eef1fb;border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+  .tg{background:none;border:none;color:var(--muted);font-weight:700;font-size:13px;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .tg.active{background:var(--blue);color:#fff}
   table{width:100%;border-collapse:collapse;font-size:14px}
   th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:6px 8px;border-bottom:2px solid var(--line);position:sticky;top:0;background:var(--card)}
   td{padding:9px 8px;border-bottom:1px solid #eef1f6}
@@ -55,7 +57,10 @@
   <div class="bar">
     <span class="stat" id="stat"></span>
     <input class="search" id="search" placeholder="🔍 Rechercher (ex: marlboro gold)…" oninput="render()">
-    <label class="chk"><input type="checkbox" id="onlyChanged" onchange="render()"> Prix modifiés</label>
+    <div class="toggle">
+      <button class="tg active" id="tgAll" onclick="setFilter(false)">Tous</button>
+      <button class="tg" id="tgChg" onclick="setFilter(true)">💹 Prix modifiés</button>
+    </div>
     <button class="btn ghost" onclick="copyAll()">📋 Copier</button>
   </div>
   <div class="tblwrap">
@@ -71,7 +76,8 @@
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-let products=[], dateLabel='';
+let products=[], dateLabel='', onlyChanged=false;
+function setFilter(v){ onlyChanged=v; document.getElementById('tgAll').classList.toggle('active',!v); document.getElementById('tgChg').classList.toggle('active',v); render(); }
 
 const drop=document.getElementById('drop'), fileInput=document.getElementById('file');
 ['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('drag');}));
@@ -130,8 +136,7 @@ function setStatus(t){ document.getElementById('status').textContent=t; }
 
 function filtered(){
   const q=document.getElementById('search').value.trim().toLowerCase();
-  const only=document.getElementById('onlyChanged').checked;
-  return products.filter(p=>(!only||p.changed) && (!q || (p.name+' '+p.code).toLowerCase().includes(q)));
+  return products.filter(p=>(!onlyChanged||p.changed) && (!q || (p.name+' '+p.code).toLowerCase().includes(q)));
 }
 function render(){
   const list=filtered();
