@@ -69,7 +69,7 @@
   .cathead td{background:#13237e;color:#fff;font-weight:800;font-size:12px;padding:5px 8px}
   .catname{background:transparent;border:none;color:#fff;font-weight:800;font-size:12px;padding:4px;text-transform:uppercase;min-width:150px}
   .catname:focus{outline:none;background:rgba(255,255,255,.16);border-radius:4px}
-  .mini{background:rgba(255,255,255,.22);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-left:8px}
+  .mini{background:#27ae60;color:#fff;border:none;border-radius:6px;padding:6px 13px;font-size:12px;font-weight:800;cursor:pointer;margin-left:10px}
   td.dh{width:24px;text-align:center;color:#fff;cursor:grab;font-size:13px;user-select:none}
   tr.prow.dragover{outline:2px dashed #13237e;outline-offset:-2px}
 
@@ -110,9 +110,10 @@
 <!-- ===== ONGLET 2 : DONNÉES (synchronisé) ===== -->
 <div id="tab2" style="display:none">
   <div class="toolbar2">
-    <button class="btn green" onclick="copyAllData()">📋 Copier les données</button>
-    <button class="btn" onclick="generateFromData()">🏷️ Générer les étiquettes →</button>
-    <button class="btn grey" onclick="addCategory()">+ Catégorie</button>
+    <button class="btn green" onclick="addProduct()">➕ Nouveau produit</button>
+    <button class="btn grey" onclick="addCategory()">📁 Nouvelle catégorie</button>
+    <button class="btn" onclick="generateFromData()">🏷️ Générer →</button>
+    <button class="btn grey" onclick="copyAllData()">📋 Copier</button>
     <span class="cnt" id="rowCount"></span>
   </div>
 
@@ -327,7 +328,7 @@ function renderRows(){
   while(i<rows.length){
     const fam=rows[i].famille||'(sans catégorie)';
     let j=i; while(j<rows.length && (rows[j].famille||'(sans catégorie)')===fam) j++;
-    html+=`<tr class="cathead"><td colspan="9">📁 <input class="catname" value="${esc(fam)}" onchange="renameCat(${i},${j},this.value)"><button class="mini" onclick="addRowToGroup(${j})">+ Ligne</button></td></tr>`;
+    html+=`<tr class="cathead"><td colspan="9">📁 <input class="catname" value="${esc(fam)}" onchange="renameCat(${i},${j},this.value)"><button class="mini" onclick="addRowToGroup(${j})">➕ Produit</button></td></tr>`;
     for(let k=i;k<j;k++) html+=prow(rows[k],k);
     i=j;
   }
@@ -335,7 +336,15 @@ function renderRows(){
 }
 function editCell(i,field,val){ if(rows[i]){ rows[i][field]=val; save(); } }
 function addRowToGroup(idx){ const fam=(rows[idx-1]||{}).famille||''; rows.splice(idx,0,{famille:fam,code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'}); save(); renderRows(); }
-function addCategory(){ const n=prompt("Nom de la nouvelle catégorie ?"); if(!n) return; rows.push({famille:n.toUpperCase().trim(),code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'}); save(); renderRows(); }
+function addCategory(){ const n=prompt("Nom de la nouvelle catégorie ?"); if(!n) return; rows.push({famille:n.toUpperCase().trim(),code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'}); normalize(); save(); renderRows(); }
+function addProduct(){
+  let fam;
+  if(rows.length===0){ fam=(prompt("Nom de la catégorie ?","DIVERS")||'').toUpperCase().trim(); if(!fam) return; }
+  else fam=rows[0].famille||'DIVERS';
+  rows.unshift({famille:fam,code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'});
+  normalize(); save(); renderRows();
+  const inp=document.querySelector('tr.prow input'); if(inp) inp.focus();
+}
 function renameCat(start,end,name){ const nm=name.trim(); for(let k=start;k<end;k++) if(rows[k]) rows[k].famille=nm; save(); renderRows(); }
 function delRow(i){ rows.splice(i,1); save(); renderRows(); }
 
