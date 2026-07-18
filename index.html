@@ -59,11 +59,19 @@
   .delrow{background:none;border:none;color:#c0392b;font-size:16px;cursor:pointer}
   .cnt{color:#6b7280;font-size:12px;font-weight:600}
   #palOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100001;justify-content:center;align-items:center}
-  #palBox{background:#fff;padding:18px;border-radius:14px;width:640px;max-width:96vw;max-height:88vh;overflow:auto;text-align:center}
+  #palBox{background:#fff;padding:16px;border-radius:14px;width:430px;max-width:94vw;max-height:80vh;overflow:auto;text-align:center}
   #palBox h3{margin:0 0 4px}#palBox p{margin:0 0 10px;color:#666;font-size:12px}
-  .pal-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:5px}
-  .pal-sw{width:100%;aspect-ratio:1;border-radius:5px;cursor:pointer;border:1px solid rgba(0,0,0,.12)}
-  .pal-sw:hover{transform:scale(1.25);border:2px solid #000;z-index:5}
+  .pal-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+  .pal-sw{width:100%;aspect-ratio:1;border-radius:4px;cursor:pointer;border:1px solid rgba(0,0,0,.12)}
+  .pal-sw:hover{border-color:#111;box-shadow:0 0 0 2px #111}
+  /* toolbar + catégories + drag */
+  .toolbar2{position:sticky;top:0;z-index:40;background:#eef2f8;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0}
+  .cathead td{background:#13237e;color:#fff;font-weight:800;font-size:12px;padding:5px 8px}
+  .catname{background:transparent;border:none;color:#fff;font-weight:800;font-size:12px;padding:4px;text-transform:uppercase;min-width:150px}
+  .catname:focus{outline:none;background:rgba(255,255,255,.16);border-radius:4px}
+  .mini{background:rgba(255,255,255,.22);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-left:8px}
+  td.dh{width:24px;text-align:center;color:#fff;cursor:grab;font-size:13px;user-select:none}
+  tr.prow.dragover{outline:2px dashed #13237e;outline-offset:-2px}
 
   @media print { .tabbar,.no-print,#colorModalOverlay,#tab2,#palOverlay { display: none !important; } body { background: white; } .page-sheet { margin: 0; box-shadow: none; border: none; } }
 </style></head><body>
@@ -101,26 +109,27 @@
 
 <!-- ===== ONGLET 2 : DONNÉES (synchronisé) ===== -->
 <div id="tab2" style="display:none">
+  <div class="toolbar2">
+    <button class="btn green" onclick="copyAllData()">📋 Copier les données</button>
+    <button class="btn" onclick="generateFromData()">🏷️ Générer les étiquettes →</button>
+    <button class="btn grey" onclick="addCategory()">+ Catégorie</button>
+    <span class="cnt" id="rowCount"></span>
+  </div>
+
   <div class="card2">
     <h3>📥 Importer / coller les données (depuis Excel)</h3>
     <textarea class="imp" id="importBox" placeholder="Collez ici vos colonnes : Famille&#9;Code&#9;Marque&#9;Détail&#9;Qté&#9;Prix&#9;Date&#9;#Couleur"></textarea>
     <div class="bar2" style="margin-top:8px">
       <button class="btn" onclick="importData()">Importer (remplacer)</button>
       <button class="btn grey" onclick="importData(true)">Ajouter à la liste</button>
-      <span class="cnt" id="rowCount"></span>
     </div>
   </div>
 
   <div class="card2">
-    <div class="bar2">
-      <h3 style="margin:0">📋 Mes produits</h3>
-      <button class="btn grey" onclick="addRow()">+ Ligne</button>
-      <button class="btn green" onclick="generateFromData()" style="margin-left:auto">🏷️ Générer les étiquettes →</button>
-    </div>
     <div class="tblwrap">
       <table class="data">
         <thead><tr>
-          <th>Famille</th><th>Code</th><th>Marque</th><th>Détail</th><th>Qté</th><th>Prix</th><th>Date</th><th>Couleur</th><th></th>
+          <th></th><th>Code</th><th>Marque</th><th>Détail</th><th>Qté</th><th>Prix</th><th>Date</th><th>Couleur</th><th></th>
         </tr></thead>
         <tbody id="dataRows"></tbody>
       </table>
@@ -281,25 +290,68 @@ function importData(append){
   alert(parsed.length+" lignes importées.");
 }
 
+function esc(s){ return String(s==null?'':s).replace(/"/g,'&quot;'); }
+function hexToRgba(hex,a){ hex=String(hex||'#333333').replace('#',''); if(hex.length===3) hex=hex.split('').map(c=>c+c).join(''); const n=parseInt(hex,16); if(isNaN(n)) return 'transparent'; return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+
+function prow(r,k){
+  const col=r.couleur||'#333333';
+  return `<tr class="prow" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,${k})" style="background:${hexToRgba(col,.12)}">
+    <td class="dh" draggable="true" ondragstart="dragStart(event,${k})" style="background:${col}">⠿</td>
+    <td><input value="${esc(r.code)}" onchange="editCell(${k},'code',this.value)" style="width:70px;min-width:70px"></td>
+    <td><input value="${esc(r.marque)}" onchange="editCell(${k},'marque',this.value)" style="min-width:100px"></td>
+    <td><input value="${esc(r.detail)}" onchange="editCell(${k},'detail',this.value)" style="min-width:140px"></td>
+    <td><input value="${esc(r.qte)}" onchange="editCell(${k},'qte',this.value)" style="width:52px;min-width:52px"></td>
+    <td><input value="${esc(r.prix)}" onchange="editCell(${k},'prix',this.value)" style="width:60px;min-width:60px"></td>
+    <td><input value="${esc(r.date)}" onchange="editCell(${k},'date',this.value)" style="width:60px;min-width:60px"></td>
+    <td><span class="sw" style="background:${col}" onclick="openPal(${k})" title="${col}"></span></td>
+    <td><button class="delrow" onclick="delRow(${k})">🗑️</button></td>
+  </tr>`;
+}
 function renderRows(){
   const tb=document.getElementById('dataRows');
   document.getElementById('rowCount').textContent = rows.length+' produit(s)';
-  tb.innerHTML = rows.map((r,i)=>`
-    <tr>
-      <td><input value="${(r.famille||'').replace(/"/g,'&quot;')}" onchange="editCell(${i},'famille',this.value)" style="min-width:120px"></td>
-      <td><input value="${r.code||''}" onchange="editCell(${i},'code',this.value)" style="width:70px;min-width:70px"></td>
-      <td><input value="${(r.marque||'').replace(/"/g,'&quot;')}" onchange="editCell(${i},'marque',this.value)" style="min-width:110px"></td>
-      <td><input value="${(r.detail||'').replace(/"/g,'&quot;')}" onchange="editCell(${i},'detail',this.value)" style="min-width:150px"></td>
-      <td><input value="${r.qte||''}" onchange="editCell(${i},'qte',this.value)" style="width:56px;min-width:56px"></td>
-      <td><input value="${r.prix||''}" onchange="editCell(${i},'prix',this.value)" style="width:64px;min-width:64px"></td>
-      <td><input value="${r.date||''}" onchange="editCell(${i},'date',this.value)" style="width:64px;min-width:64px"></td>
-      <td><span class="sw" style="background:${r.couleur||'#333'}" onclick="openPal(${i})" title="${r.couleur||''}"></span></td>
-      <td><button class="delrow" onclick="delRow(${i})">🗑️</button></td>
-    </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:#94a2bd;padding:20px">Aucune donnée. Importez ou ajoutez une ligne.</td></tr>';
+  if(rows.length===0){ tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:#94a2bd;padding:20px">Aucune donnée. Importez, ou ajoutez une catégorie.</td></tr>'; return; }
+  let html='',i=0;
+  while(i<rows.length){
+    const fam=rows[i].famille||'(sans catégorie)';
+    let j=i; while(j<rows.length && (rows[j].famille||'(sans catégorie)')===fam) j++;
+    html+=`<tr class="cathead"><td colspan="9">📁 <input class="catname" value="${esc(fam)}" onchange="renameCat(${i},${j},this.value)"><button class="mini" onclick="addRowToGroup(${j})">+ Ligne</button></td></tr>`;
+    for(let k=i;k<j;k++) html+=prow(rows[k],k);
+    i=j;
+  }
+  tb.innerHTML=html;
 }
 function editCell(i,field,val){ if(rows[i]){ rows[i][field]=val; save(); } }
-function addRow(){ rows.unshift({famille:'',code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'}); save(); renderRows(); }
+function addRowToGroup(idx){ const fam=(rows[idx-1]||{}).famille||''; rows.splice(idx,0,{famille:fam,code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'}); save(); renderRows(); }
+function addCategory(){ const n=prompt("Nom de la nouvelle catégorie ?"); if(!n) return; rows.push({famille:n.toUpperCase().trim(),code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'}); save(); renderRows(); }
+function renameCat(start,end,name){ const nm=name.trim(); for(let k=start;k<end;k++) if(rows[k]) rows[k].famille=nm; save(); renderRows(); }
 function delRow(i){ rows.splice(i,1); save(); renderRows(); }
+
+// glisser-déposer pour réordonner
+let dragIdx=null;
+function dragStart(e,i){ dragIdx=i; e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',String(i));}catch(_){} }
+function dragOver(e){ e.preventDefault(); const tr=e.currentTarget; if(tr&&tr.classList) tr.classList.add('dragover'); }
+function dragLeave(e){ const tr=e.currentTarget; if(tr&&tr.classList) tr.classList.remove('dragover'); }
+function dropRow(e,targetIdx){
+  e.preventDefault();
+  const tr=e.currentTarget; if(tr&&tr.classList) tr.classList.remove('dragover');
+  if(dragIdx===null||dragIdx===targetIdx){ dragIdx=null; return; }
+  const targetRow=rows[targetIdx];
+  const moved=rows.splice(dragIdx,1)[0];
+  moved.famille=targetRow.famille;                 // rejoint la catégorie de destination
+  const nt=rows.indexOf(targetRow);
+  rows.splice(dragIdx<targetIdx ? nt+1 : nt, 0, moved);
+  dragIdx=null; save(); renderRows();
+}
+
+// copier toutes les données (avec les couleurs actuelles)
+function copyText(t){ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); }
+function copyAllData(){
+  if(rows.length===0){ alert("Aucune donnée à copier."); return; }
+  const txt=rows.map(r=>[r.famille||'',r.code||'',r.marque||'',r.detail||'',r.qte||'',r.prix||'',r.date||'',r.couleur||''].join('\t')).join('\n');
+  copyText(txt);
+  const b=document.getElementById('syncBadge'), old=b.textContent; b.textContent='📋 Copié ('+rows.length+') !'; setTimeout(()=>{b.textContent=old;},1300);
+}
 
 // palette large pour la colonne couleur
 let palRowIdx=null;
