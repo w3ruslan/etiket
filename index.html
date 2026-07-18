@@ -66,6 +66,7 @@
   .pal-sw:hover{border-color:#111;box-shadow:0 0 0 2px #111}
   /* toolbar + catégories + drag */
   .toolbar2{position:sticky;top:0;z-index:40;background:#eef2f8;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0}
+  .catsel{border:1px solid #b9c4de;border-radius:8px;padding:9px 10px;font-size:13px;font-weight:700;color:#13237e;background:#fff;max-width:220px}
   .cathead td{background:#13237e;color:#fff;font-weight:800;font-size:12px;padding:5px 8px}
   .catname{background:transparent;border:none;color:#fff;font-weight:800;font-size:12px;padding:4px;text-transform:uppercase;min-width:150px}
   .catname:focus{outline:none;background:rgba(255,255,255,.16);border-radius:4px}
@@ -110,8 +111,8 @@
 <!-- ===== ONGLET 2 : DONNÉES (synchronisé) ===== -->
 <div id="tab2" style="display:none">
   <div class="toolbar2">
+    <select id="catSelect" class="catsel"></select>
     <button class="btn green" onclick="addProduct()">➕ Nouveau produit</button>
-    <button class="btn grey" onclick="addCategory()">📁 Nouvelle catégorie</button>
     <button class="btn" onclick="generateFromData()">🏷️ Générer →</button>
     <button class="btn grey" onclick="copyAllData()">📋 Copier</button>
     <span class="cnt" id="rowCount"></span>
@@ -333,17 +334,25 @@ function renderRows(){
     i=j;
   }
   tb.innerHTML=html;
+  renderCatSelect();
+}
+function renderCatSelect(){
+  const sel=document.getElementById('catSelect'); if(!sel) return;
+  const cur=sel.value;
+  const cats=[...new Set(rows.map(r=>r.famille||'(sans catégorie)'))];
+  sel.innerHTML = cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('') + `<option value="__new__">＋ Nouvelle catégorie…</option>`;
+  if(cats.includes(cur)) sel.value=cur;
 }
 function editCell(i,field,val){ if(rows[i]){ rows[i][field]=val; save(); } }
 function addRowToGroup(idx){ const fam=(rows[idx-1]||{}).famille||''; rows.splice(idx,0,{famille:fam,code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'}); save(); renderRows(); }
 function addCategory(){ const n=prompt("Nom de la nouvelle catégorie ?"); if(!n) return; rows.push({famille:n.toUpperCase().trim(),code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'}); normalize(); save(); renderRows(); }
 function addProduct(){
-  let fam;
-  if(rows.length===0){ fam=(prompt("Nom de la catégorie ?","DIVERS")||'').toUpperCase().trim(); if(!fam) return; }
-  else fam=rows[0].famille||'DIVERS';
+  const sel=document.getElementById('catSelect');
+  let fam = sel ? sel.value : '';
+  if(fam==='__new__' || !fam){ fam=(prompt("Nom de la nouvelle catégorie ?","DIVERS")||'').toUpperCase().trim(); if(!fam) return; }
   rows.unshift({famille:fam,code:'',marque:'',detail:'',qte:'',prix:'',date:'',couleur:'#333333'});
   normalize(); save(); renderRows();
-  const inp=document.querySelector('tr.prow input'); if(inp) inp.focus();
+  if(sel) sel.value=fam;
 }
 function renameCat(start,end,name){ const nm=name.trim(); for(let k=start;k<end;k++) if(rows[k]) rows[k].famille=nm; save(); renderRows(); }
 function delRow(i){ rows.splice(i,1); save(); renderRows(); }
